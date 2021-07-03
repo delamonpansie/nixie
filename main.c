@@ -32,6 +32,11 @@ static struct time {
         unsigned char min;
         unsigned char hour : 6;
         unsigned char twentyfour : 1;
+        unsigned char day;
+        unsigned char date;
+        unsigned char month;
+        unsigned char year;
+
 } time;
 
 static uint8_t
@@ -244,7 +249,7 @@ button_scan()
                 down.short_press = 0;
         }
 
-        // ds3231_sync() takes about 0.2ms to execute with I2C set to 400kHz
+        // ds3231_sync() takes less than 1ms to execute with I2C set to 400kHz
         ds3231_sync();
 }
 
