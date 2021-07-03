@@ -223,7 +223,7 @@ button_scan()
 }
 
 static void
-refresh(char h, char m, char s) {
+refresh() {
         if (config.antipoison_hour == 0x2) {
                 const char d[] = {1, 0, 2, 9, 8, 3, 4, 7, 6, 5};
                 static char j;
@@ -232,7 +232,7 @@ refresh(char h, char m, char s) {
                 return;
         }
 
-        paint(h, m, s, s & 1);
+        paint(time.hour, time.min, time.sec, time.sec & 1);
 }
 
 static void
@@ -369,7 +369,7 @@ mode()
         config_init();
 
         do {
-                refresh(0, mode, dec2bcd(*p->val));
+                paint(mode, dec2bcd(*p->val), 0, 0);
 
                 char op = pop_op();
                 switch (op) {
@@ -392,7 +392,9 @@ mode()
                 }
         } while (count < 16);
         config_write();
+        push_op(REFRESH);
 }
+
 int
 main()
 {
@@ -413,15 +415,15 @@ main()
                 char op = pop_op();
                 switch (op & 0x7f) {
                 case REFRESH:
-                        refresh(time.hour, time.min, time.sec);
+                        refresh();
                         break;
                 case UP:
                         time_up(&time);
-                        refresh(time.hour, time.min, time.sec);
+                        refresh();
                         break;
                 case DOWN:
                         time_down(&time);
-                        refresh(time.hour, time.min, time.sec);
+                        refresh();
                         break;
                 case MODE:
                         if ((op & LONG_PRESS) == 0)
