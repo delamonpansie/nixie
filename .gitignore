@@ -1,0 +1,8 @@
+*.o
+*.d
+.cache
+*.elf
+*.hex
+*.map
+compile_commands.json
+.gdb_history
