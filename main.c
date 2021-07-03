@@ -274,22 +274,15 @@ time_down(struct time *time)
 
 
 static void
-config_print(struct config *cfg)
+config_print()
 {
-        printf("crc: %d\n"
-               "tube_pwm_freq: %d\n"
-               "tube_pwm_duty: %d\n"
-               "led_red_brightness: %d\n"
-               "led_green_brightness: %d\n"
-               "led_blue_brightness: %d\n"
-               "antipoison_hour: %d\n",
-               cfg->crc,
-               cfg->tube_pwm_freq,
-               cfg->tube_pwm_duty,
-               cfg->led_red_brightness,
-               cfg->led_green_brightness,
-               cfg->led_blue_brightness,
-               cfg->antipoison_hour);
+        printf("configuration:\n");
+        printf("  tube_pwm_freq:        %d\n", config.tube_pwm_freq);
+        printf("  tube_pwm_duty:        %d\n", config.tube_pwm_duty);
+        printf("  led_red_brightness:   %d\n", config.led_red_brightness);
+        printf("  led_green_brightness: %d\n", config.led_green_brightness);
+        printf("  led_blue_brightness:  %d\n", config.led_blue_brightness);
+        printf("  antipoison_hour:      %d\n", config.antipoison_hour);
 }
 
 static uint8_t
@@ -407,7 +400,7 @@ main()
         printf("\n\nloading\n\n\n");
 
         config_apply();
-        config_print(&config);
+        config_print();
 
         wdt_enable(WDTO_250MS);
 
