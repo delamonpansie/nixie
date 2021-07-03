@@ -23,7 +23,8 @@ watchdog_disable(void)
 struct config config = {
         .tube_pwm_freq = 15, // 150Hz
         .tube_pwm_duty = 90,
-        .antipoison_hour = 0xff,
+        .antipoison_start = 0,
+        .antipoison_duration = 24,
 };
 
 static struct time {
@@ -65,6 +66,13 @@ bin2bcd(uint8_t bin)
         return bcd;
 }
 
+static uint8_t
+bcd2bin(uint8_t bcd)
+{
+        return (bcd >> 4) * 10 + (bcd & 0xf);
+}
+
+
 #define OP_RING_BITS 3
 #define OP_RING_MASK (_BV(OP_RING_BITS)-1)
 static volatile char op_ring[_BV(OP_RING_BITS)], opr;
@@ -73,7 +81,7 @@ static volatile char opw;
 static char
 pop_op()
 {
-        while (opr == opw);
+        if (opr == opw) return NOP;
         enum op op = op_ring[opr];
         opr = (opr + 1) & OP_RING_MASK;
         return op;
@@ -87,7 +95,6 @@ push_op(char op)
         op_ring[opw] = op;
         opw = (opw + 1) & OP_RING_MASK;
 }
-
 
 static void
 i2c_init()
@@ -255,14 +262,6 @@ button_scan()
 
 static void
 refresh() {
-        if (config.antipoison_hour == 0x2) {
-                const char d[] = {1, 0, 2, 9, 8, 3, 4, 7, 6, 5};
-                static char j;
-                paint((d[j] << 4) & 0xf, (d[j] << 4) & 0xf, (d[j] << 4) & 0xf, 0);
-                j = j < 9 ? j + 1 : 0;
-                return;
-        }
-
         paint(time.hour, time.min, time.sec, time.sec & 1);
 }
 
@@ -313,7 +312,8 @@ config_print()
         printf("  led_red_brightness:   %d\n", config.led_red_brightness);
         printf("  led_green_brightness: %d\n", config.led_green_brightness);
         printf("  led_blue_brightness:  %d\n", config.led_blue_brightness);
-        printf("  antipoison_hour:      %d\n", config.antipoison_hour);
+        printf("  antipoison_start:     %d\n", config.antipoison_start);
+        printf("  antipoison_duration:  %d\n", config.antipoison_duration);
 }
 
 static uint8_t
@@ -356,7 +356,8 @@ struct param {
         {0x03, &config.led_blue_brightness,	0,	0,	10, "blue led pwm"},
         {0x04, &config.tube_pwm_freq,		0,	10,	60, "tube pwm"},
         {0x05, &config.tube_pwm_duty,		0,	10,	99, "tube duty"},
-        {0x06, &config.antipoison_hour,		0,	0,	24, "antipoison hour"},
+        {0x06, &config.antipoison_start,	0,	0,	24, "antipoison start"},
+        {0x07, &config.antipoison_duration,	0,	0,	24, "antipoison duration"},
         {0xff, NULL, 				0, 	0, 	0,  NULL},
 };
 
@@ -410,6 +411,52 @@ out:
         push_op(REFRESH);
 }
 
+static char
+attention_requested()
+{
+        switch (pop_op()) {
+        case NOP:
+        case REFRESH:
+                return 0;
+        default:
+                return 1;
+        }
+}
+
+static void
+antipoison()
+{
+        if (config.antipoison_duration == 0)
+                return;
+
+
+        static char disabled_today;
+        if (disabled_today == time.date)
+                return;
+        disabled_today = -1;
+
+        while (1) {
+                char hour = bcd2bin(time.hour),
+                    start = config.antipoison_start,
+                      end = config.antipoison_start + config.antipoison_duration;
+
+                if (hour < start || hour >= end)
+                        return;
+
+                if (attention_requested() ) {
+                        disabled_today = time.date;
+                        return;
+                }
+
+                static char j;
+                const char d[] = {1, 0, 2, 9, 8, 3, 4, 7, 6, 5};
+                char x = (d[j] << 4) | d[j];
+                paint(x, x, x, 0);
+                j = j < 9 ? j + 1 : 0;
+                _delay_ms(500);
+         }
+}
+
 int
 main()
 {
@@ -427,6 +474,8 @@ main()
         wdt_enable(WDTO_250MS);
 
 	for (;;) {
+                antipoison();
+
                 char op = pop_op();
                 switch (op & 0x7f) {
                 case REFRESH:

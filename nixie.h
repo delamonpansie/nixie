@@ -8,7 +8,8 @@ struct config {
         unsigned char led_red_brightness;
         unsigned char led_green_brightness;
         unsigned char led_blue_brightness;
-        unsigned char antipoison_hour;
+        unsigned char antipoison_start;
+        unsigned char antipoison_duration;
 };
 
 enum op {
