@@ -34,6 +34,32 @@ static struct time {
         unsigned char twentyfour : 1;
 } time;
 
+static uint8_t
+bin2bcd(uint8_t bin)
+{
+        if (bin == 0)
+                return 0;
+
+        uint8_t bit = 0x40; //  99 max binary
+        while ((bin & bit) == 0) // skip to MSB
+                bit >>= 1;
+
+        uint8_t bcd = 0;
+        uint8_t carry = 0;
+        while (1) {
+                bcd <<= 1;
+                bcd += carry; // carry 6s to next BCD digits (10 + 6 = 0x10 = LSB of next BCD digit)
+                if (bit & bin)
+                        bcd |= 1;
+                bit >>= 1;
+                if (bit == 0)
+                        return bcd;
+                carry = ((bcd + 0x33) & 0x88) >> 1; // carrys: 8s -> 4s
+                carry += carry >> 1; // carrys 6s
+        }
+        return bcd;
+}
+
 #define OP_RING_BITS 3
 #define OP_RING_MASK (_BV(OP_RING_BITS)-1)
 static volatile char op_ring[_BV(OP_RING_BITS)], opr;
@@ -312,79 +338,70 @@ config_write()
         eeprom_write_block(&config, (void *)13, sizeof config);
 }
 
+struct param {
+        unsigned char id;
+        unsigned char *val;
+        unsigned char flags;
+        unsigned char lower_bound;
+        unsigned char upper_bound;
+        const char *descr;
+} param[] = {
+        {0x01, &config.led_red_brightness,	0,	0,	10, "red led pwm"},
+        {0x02, &config.led_green_brightness,	0,	0,	10, "green led pwm"},
+        {0x03, &config.led_blue_brightness,	0,	0,	10, "blue led pwm"},
+        {0x04, &config.tube_pwm_freq,		0,	10,	60, "tube pwm"},
+        {0x05, &config.tube_pwm_duty,		0,	10,	99, "tube duty"},
+        {0x06, &config.antipoison_hour,		0,	0,	24, "antipoison hour"},
+        {0xff, NULL, 				0, 	0, 	0,  NULL},
+};
+
 
 static void
-update_u8(char op, uint8_t *val, uint8_t step, uint8_t lower_bound, uint8_t upper_bound)
+update_u8(char op, uint8_t *val, uint8_t flags, uint8_t lower_bound, uint8_t upper_bound)
 {
         switch (op) {
         case UP:
-                if (*val <= upper_bound - step)
-                        *val += step;
-                else
-                        *val = lower_bound;
+                if (*val <= upper_bound - 1)
+                        (*val)++;
                 break;
         case DOWN:
-                if (*val >= lower_bound + step)
-                        *val -= step;
-                else
-                        *val = upper_bound;
+                if (*val >= lower_bound + 1)
+                        (*val)--;
                 break;
         }
-}
-
-struct param {
-        unsigned char *val;
-        unsigned char step;
-        unsigned char lower_bound;
-        unsigned char upper_bound;
-} param[] = {
-        {&config.led_red_brightness,	1,	0,	10},
-        {&config.led_green_brightness,	1,	0,	10},
-        {&config.led_blue_brightness,	1,	0,	10},
-        {&config.tube_pwm_freq,		1,	10,	60},
-        {&config.tube_pwm_duty,		1,	10,	99},
-};
-
-static uint8_t
-dec2bcd(uint8_t x)
-{
-        if ((x & 0xf) > 9)
-                x += 6;
-        return x;
 }
 
 static void
 mode()
 {
-        unsigned char mode = 0, count = 0;
-        struct param *p = &param[mode];
+        unsigned char count = 0;
+        struct param *p = param;
 
         config_init();
 
         do {
-                paint(mode, dec2bcd(*p->val), 0, 0);
+                paint(p->id, bin2bcd(*p->val), 0, 0);
 
                 char op = pop_op();
+                count = op == REFRESH ? count + 1 : 0;
                 switch (op) {
                 case MODE|LONG_PRESS:
-                        count = 0xff;
-                        break;
+                        goto out;
                 case MODE:
-                        count = 0;
-                        mode++;
-                        if (mode > 5)
-                                mode = 0;
-                        p = &param[mode];
+                        p++;
+                        if (p->val == NULL)
+                                goto out;
                         break;
                 case UP:
                 case DOWN:
-                        count = 0;
-                        update_u8(op, p->val, p->step, p->lower_bound, p->upper_bound);
+                        update_u8(op, p->val, p->flags, p->lower_bound, p->upper_bound);
                         config_apply();
                         break;
                 }
-        } while (count < 16);
+        } while (count < 10);
+out:
         config_write();
+        config_print();
         push_op(REFRESH);
 }
 
