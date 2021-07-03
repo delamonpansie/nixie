@@ -466,7 +466,7 @@ main()
         i2c_init();
         board_init();
 
-        printf("\n\nloading\n\n\n");
+        printf("version: %s\n", VERSION);
 
         config_apply();
         config_print();

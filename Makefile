@@ -9,6 +9,7 @@ obj += usart/uart.o
 obj += main.o
 obj += $(target).o
 
+main.o: CFLAGS += -DVERSION='"$(shell git rev-parse HEAD)"'
 
 .PHONY: flash
 flash-utk500: $(target).hex
