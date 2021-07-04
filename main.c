@@ -198,25 +198,47 @@ button_decode(unsigned char mask, struct button_state *button)
         }
 }
 
+static void
+uart_read()
+{
+        // ignore keyboard during ~10s after boot
+        // if uart is connected to something like esp_link,
+        // it will read garbage produced by esp
+        static int j = 10000;
+        if (j > 0) {
+                j--;
+                if (j == 0) {
+                        // discard any buffered data
+                        while (!uart_read_would_block())
+                                getchar();
+                }
+                return;
+        }
+
+        if (uart_read_would_block())
+                return;
+
+        switch (getchar()) {
+        case 'u':
+                push_op(UP);
+                break;
+        case 'd':
+                push_op(DOWN);
+                break;
+        case 'm':
+                push_op(MODE);
+                break;
+        case 'M':
+                push_op(MODE|LONG_PRESS);
+                break;
+        }
+}
+
+
 void
 button_scan()
 {
-        if (!uart_read_would_block()) {
-                switch (getchar()) {
-                case 'u':
-                        push_op(UP);
-                        break;
-                case 'd':
-                        push_op(DOWN);
-                        break;
-                case 'm':
-                        push_op(MODE);
-                        break;
-                case 'M':
-                        push_op(MODE|LONG_PRESS);
-                        break;
-                }
-        }
+        uart_read();
 
         unsigned char button_mask = button_read();
         static struct button_state mode, up, down;
