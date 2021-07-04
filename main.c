@@ -421,6 +421,7 @@ mode()
                                 goto out;
                         break;
                 case UP:
+                        /* fallthrough */
                 case DOWN:
                         update_u8(op, p->val, p->flags, p->lower_bound, p->upper_bound);
                         config_apply();
@@ -484,7 +485,7 @@ main()
 {
         config_init();
 	sei();
-        uart_init(9600);
+        uart_init(115200); // esp_link fails if uart != 115200
         i2c_init();
         board_init();
 
