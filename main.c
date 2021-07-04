@@ -22,9 +22,9 @@ watchdog_disable(void)
 
 struct config config = {
         .tube_pwm_freq = 15, // 150Hz
-        .tube_pwm_duty = 90,
-        .antipoison_start = 0,
-        .antipoison_duration = 24,
+        .tube_pwm_duty = 70,
+        .antipoison_start = 2,
+        .antipoison_duration = 2,
 };
 
 static struct time {
