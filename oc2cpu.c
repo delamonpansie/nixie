@@ -10,8 +10,12 @@
   Buttons:
     PD4, PD7
 
-  Tube outputs:
+  Tube enable outputs:
     PD3, PD5, PD6
+
+  Tube mux outputs:
+    PC0, PC1, PC2, PC3
+    PB0, PB1, PB2, PB3
 
 */
 
@@ -51,19 +55,19 @@ ISR(TIMER1_COMPB_vect)
         static char ix;
 
         PORTC |= output[ix];
-        PORTB |= output[ix+1];
+        PORTB |= output[ix + 3];
 
         switch (ix) {
         case 0:
-                PORTD |= _BV(PD3); // minutes
+                PORTD |= _BV(PD6); // [@_:_@:__]
                 ix = 1;
                 break;
         case 1:
-                PORTD |= _BV(PD5); // hours
+                PORTD |= _BV(PD5); // [_@:__:@_]
                 ix = 2;
                 break;
         case 2:
-                PORTD |= _BV(PD6);
+                PORTD |= _BV(PD3); // [__:@_:_@]
                 ix = 0;
                 break;
         }
@@ -72,11 +76,12 @@ ISR(TIMER1_COMPB_vect)
 void
 paint(char x, char y, char z, char q __attribute__((unused)))
 {
-        const char translate[16] = { 2, 8, 9, 0, 1, 5, 4, 6, 7, 3, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf};
+        const char translate[16] = { 2, 8, 9, 0, 1, 5, 4, 6, 7, 3,
+                                     0xf, 0xf, 0xf, 0xf, 0xf, 0xf};
 
-        output[0] = translate[y >> 4];
+        output[0] = translate[x >> 4];
         output[1] = translate[x & 0xf];
-        output[2] = translate[x >> 4];
+        output[2] = translate[y >> 4];
         output[3] = translate[y & 0xf];
         output[4] = translate[z >> 4];
         output[5] = translate[z & 0xf];
