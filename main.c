@@ -37,7 +37,6 @@ static struct time {
         unsigned char date;
         unsigned char month;
         unsigned char year;
-
 } time;
 
 static uint8_t

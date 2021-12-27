@@ -6,7 +6,7 @@ define var_test
     $$(error $(1) undefined)
   endif
 endef
-$(foreach var,MCU F_CPU target obj,$(eval $(call var_test,$(var))))
+$(foreach var,MCU F_CPU obj,$(eval $(call var_test,$(var))))
 
 
 CC = avr-gcc
@@ -27,7 +27,6 @@ HEX_EEPROM_FLAGS += -j .eeprom
 HEX_EEPROM_FLAGS += --set-section-flags=.eeprom="alloc,load"
 HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 
-all: $(target).elf $(target).hex $(target).eep $(target).lss size
 
 $(obj): Makefile rules.mk
 dep = $(patsubst %.o,%.d,$(obj))
@@ -35,11 +34,11 @@ dep = $(patsubst %.o,%.d,$(obj))
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(target).elf: $(obj)
+%.elf: $(obj) %.o
 	 $(CC) $(LDFLAGS) $^ $(LIBDIRS) $(LIBS) -o $@
 
 %.hex: %.elf
-	avr-objcopy -O ihex $(HEX_FLASH_FLAGS)  $< $@
+	avr-objcopy -O ihex $(HEX_FLASH_FLAGS) $< $@
 
 %.eep: %.elf
 	-avr-objcopy $(HEX_EEPROM_FLAGS) -O ihex $< $@ || exit 0
@@ -47,8 +46,8 @@ $(target).elf: $(obj)
 %.lss: %.elf
 	avr-objdump -h -S $< > $@
 
-.PHONY: size
-size: $(target).elf
+.PHONY: %.size
+%.size: %.elf
 	@echo
 	@avr-size -C --mcu=$(MCU) $<
 
