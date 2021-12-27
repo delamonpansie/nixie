@@ -39,11 +39,11 @@ button_read()
 {
         char mask = 0;
         if ((PINC & _BV(PC0)) == 0)
-                mask |= BUTTON_MODE;
+                mask |= MODE;
         if ((PINC & _BV(PC1)) == 0)
-                mask |= BUTTON_UP;
+                mask |= UP;
         if ((PINC & _BV(PC2)) == 0)
-                mask |= BUTTON_DOWN;
+                mask |= DOWN;
         return mask;
 }
 
