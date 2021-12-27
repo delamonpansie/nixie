@@ -103,8 +103,7 @@ ISR(TIMER1_COMPB_vect)
                 return;
 
         // Turn of LE, just in case :)
-        TCCR1A &= ~_BV(COM1B1);
-        PORTB &= _BV(PB2);
+        PORTB &= ~_BV(PB2);
 
         // 8 bytes at 1MHz is 8us
         for (signed char i = 7; i >= 0; i--) {
@@ -112,7 +111,6 @@ ISR(TIMER1_COMPB_vect)
                 loop_until_bit_is_set(SPSR, SPIF);
         }
 
-        TCCR1A |= _BV(COM1B1);
         framebuf = NULL;
 }
 
