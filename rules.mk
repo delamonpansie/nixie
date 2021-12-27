@@ -18,7 +18,8 @@ CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
 # CFLAGS += -fdata-sections -ffunction-sections
 CFLAGS += -MD -MP
 LDFLAGS = $(COMMON)
-LDFLAGS +=  -Wl,-Map=$(target).map
+# disable generaton of map, because avr-gcc (GCC) 5.4.0 from Debian bullseye crashes
+# LDFLAGS +=  -Wl,-Map=$(target).map
 LDFLAGS += -Wl,--gc-sections
 HEX_FLASH_FLAGS += -R .eeprom -R .fuse -R .lock -R .signature
 HEX_EEPROM_FLAGS += -j .eeprom
