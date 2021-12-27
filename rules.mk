@@ -13,9 +13,10 @@ CC = avr-gcc
 CPP = avr-gcc
 COMMON = -mmcu=$(MCU)
 CFLAGS += $(COMMON)
-CFLAGS += -Wall -Wno-char-subscripts -gdwarf-2 -std=gnu99 -DF_CPU=$(F_CPU) -Os
+CFLAGS += -Wall -Wno-char-subscripts
+CFLAGS += -gdwarf-2 -std=gnu99 -DF_CPU=$(F_CPU) -Os
 CFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-# CFLAGS += -fdata-sections -ffunction-sections
+CFLAGS += -fdata-sections -ffunction-sections
 CFLAGS += -MD -MP
 LDFLAGS = $(COMMON)
 # disable generaton of map, because avr-gcc (GCC) 5.4.0 from Debian bullseye crashes
