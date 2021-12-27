@@ -207,11 +207,9 @@ uart_read()
         static int j = 10000;
         if (j > 0) {
                 j--;
-                if (j == 0) {
-                        // discard any buffered data
-                        while (!uart_read_would_block())
-                                getchar();
-                }
+                // discard any buffered data
+                while (!uart_read_would_block())
+                        getchar();
                 return;
         }
 
