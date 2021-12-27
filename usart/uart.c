@@ -85,10 +85,10 @@ uart_getchar(FILE *stream __attribute__((unused)))
 }
 
 void
-_uart_init(u16 baud)
+uart_init_ubrr(u16 ubrr0)
 {
-	UBRR0H = baud >> 8;
-	UBRR0L = baud;
+	UBRR0H = ubrr0 >> 8;
+	UBRR0L = ubrr0 & 0xf;
 
 	RXD_PORT |= _BV(RXD_BIT); /* Enable pullup on RX line */
 	UCSR0B = _BV(RXEN0)|_BV(TXEN0)|_BV(RXCIE0);
