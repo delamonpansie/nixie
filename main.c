@@ -412,7 +412,8 @@ mode()
                 paint(p->id, bin2bcd(*p->val), 0, 0);
 
                 char op = pop_op();
-                count = op == REFRESH ? count + 1 : 0;
+                if (op != NOP)
+                        count = op == REFRESH ? count + 1 : 0;
                 switch (op) {
                 case MODE|LONG_PRESS:
                         goto out;
