@@ -203,13 +203,17 @@ uart_read()
         // ignore keyboard during ~10s after boot
         // if uart is connected to something like esp_link,
         // it will read garbage produced by esp
-        static int j = 10000;
+        static int j = 1000;
         if (j > 0) {
                 j--;
                 // discard any buffered data
                 while (!uart_read_would_block())
                         getchar();
                 return;
+        }
+        if (j == 0) {
+                printf("ready to accept input\n");
+                j = -1;
         }
 
         if (uart_read_would_block())
