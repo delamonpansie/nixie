@@ -102,15 +102,18 @@ ISR(TIMER1_COMPB_vect)
         if (framebuf == NULL)
                 return;
 
-        // Turn of LE, just in case :)
-        PORTB &= ~_BV(PB2);
+        // datasheet table 3-1 suggests to disable LE when HV5122
+        // LE is connected to PB2 and will be low if PWM is enabled, becase COMPB executed after clearing OC1B (PB2)
+        // however, turn down PB2 anyway, in case of PWM is not running
+       PORTB &= ~_BV(PB2);
 
-        // 8 bytes at 1MHz is 8us
+       // 8 bytes at 4MHz is ~ 22us
         for (signed char i = 7; i >= 0; i--) {
                 SPDR = framebuf[i];
                 loop_until_bit_is_set(SPSR, SPIF);
         }
 
+        PORTB |= _BV(PB2);
         framebuf = NULL;
 }
 
@@ -173,8 +176,9 @@ tube_init()
 
         // Configure SPI pins. Set MOSI and SCK as output.
         DDRB |= _BV(PB3)|_BV(PB5);
-        // Enable SPI, Master, set clock rate fck/16 = 1MHz, MODE=2, MSB transmitted first
-        SPCR = _BV(SPE)|_BV(MSTR)|_BV(SPR0)|_BV(CPOL);
+        // Enable SPI, Master, set clock rate fck/4 = 4MHz, MODE=2, MSB transmitted first
+        // HV5122 supports clocks up to 8MHz
+        SPCR = _BV(SPE)|_BV(MSTR)|_BV(CPOL);
 
         // Clear tubes
         for (char i = 0; i < 8; i++) {
