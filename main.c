@@ -184,14 +184,14 @@ button_decode(unsigned char mask, struct button_state *button)
                         if (button->pressed < 0xff)
                                 button->pressed++;
                         if (button->pressed == 53)
-                                button->long_press = 1; // push_op((MODE + i) | LONG_PRESS);
+                                button->long_press = 1;
                 }
         } else {
                 if (button->counter > 0)
                         button->counter--;
                 if (button->counter == 0 && button->pressed) {
                         if (button->pressed < 50)
-                                button->short_press = 1; //push_op(MODE + i);
+                                button->short_press = 1;
                         button->pressed = 0;
                 }
         }
@@ -355,7 +355,7 @@ config_init()
 
         struct config tmp = { .crc = 0 };
         eeprom_read_block(&tmp, (void *)13, sizeof config);
-        if (0 && tmp.crc == config_crc(&tmp))
+        if (tmp.crc == config_crc(&tmp))
                 memcpy(&config, &tmp, sizeof config);
 }
 

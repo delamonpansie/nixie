@@ -27,7 +27,7 @@
         SCK: PB5
 
       LE(tube enable): PB2, PWM OC1B
-        PWM freq & duty dynamicaly configure via config
+        PWM freq & duty are dynamically configured via config
 
         PWM configured to trigger TIMER1_COMPB_vect interrupt at the begging of OFF cycle
         TIMER1_COMPB_vect writes framebufer to tube mux.
