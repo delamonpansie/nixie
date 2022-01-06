@@ -123,12 +123,12 @@ paint(char x, char y, char z, char q)
         static uint32_t buf[2];
         buf[0] = (uint32_t)!!q << 31 | (uint32_t)!!q << 30;
         buf[1] = (uint32_t)!!q << 31 | (uint32_t)!!q << 30;
-        buf[0] |= 1UL << (x >> 4);
-        buf[0] |= 1UL << (10 + (x & 0xf));
-        buf[0] |= 1UL << (20 + (y >> 4));
-        buf[1] |= 1UL << (y & 0xf);
-        buf[1] |= 1UL << (10 + (z >> 4));
-        buf[1] |= 1UL << (20 + (z & 0xf));
+        if ((x >> 4)  != 0xf) buf[0] |= 1UL << (x >> 4);
+        if ((x & 0xf) != 0xf) buf[0] |= 1UL << (10 + (x & 0xf));
+        if ((y >> 4)  != 0xf) buf[0] |= 1UL << (20 + (y >> 4));
+        if ((y & 0xf) != 0xf) buf[1] |= 1UL << (y & 0xf);
+        if ((z >> 4)  != 0xf) buf[1] |= 1UL << (10 + (z >> 4));
+        if ((z & 0xf) != 0xf) buf[1] |= 1UL << (20 + (z & 0xf));
 
         // wait for previous framebuf write cycle to complete
         while (framebuf != NULL);

@@ -409,7 +409,7 @@ mode()
         config_init();
 
         do {
-                paint(p->id, bin2bcd(*p->val), 0, 0);
+                paint(p->id, 0xff, bin2bcd(*p->val), 0);
 
                 char op = pop_op();
                 if (op != NOP)
