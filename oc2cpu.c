@@ -49,7 +49,7 @@ ISR(TIMER1_OVF_vect)
 }
 
 static volatile char output[6] = { 0xf, 0xf, 0xf, 0xf, 0xf, 0xf };
-
+static volatile char frame_sync;
 ISR(TIMER1_COMPB_vect)
 {
         static char ix;
@@ -69,8 +69,16 @@ ISR(TIMER1_COMPB_vect)
         case 2:
                 PORTD |= _BV(PD3); // [__:@_:_@]
                 ix = 0;
+                frame_sync = 0;
                 break;
         }
+}
+
+void
+wait_frame_sync()
+{
+        frame_sync = 1;
+        while (frame_sync);
 }
 
 void
@@ -79,12 +87,12 @@ paint(char x, char y, char z, char q __attribute__((unused)))
         const char translate[16] = { 2, 8, 9, 0, 1, 5, 4, 6, 7, 3,
                                      0xf, 0xf, 0xf, 0xf, 0xf, 0xf};
 
-        output[0] = translate[x >> 4];
-        output[1] = translate[x & 0xf];
-        output[2] = translate[y >> 4];
-        output[3] = translate[y & 0xf];
-        output[4] = translate[z >> 4];
-        output[5] = translate[z & 0xf];
+        if ((x >> 4)  != 0xf) output[0] = translate[x >> 4];
+        if ((x & 0xf) != 0xf) output[1] = translate[x & 0xf];
+        if ((y >> 4)  != 0xf) output[2] = translate[y >> 4];
+        if ((y & 0xf) != 0xf) output[3] = translate[y & 0xf];
+        if ((z >> 4)  != 0xf) output[4] = translate[z >> 4];
+        if ((z & 0xf) != 0xf) output[5] = translate[z & 0xf];
 }
 
 void

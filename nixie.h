@@ -10,6 +10,7 @@ struct config {
         unsigned char led_blue_brightness;
         unsigned char antipoison_start;
         unsigned char antipoison_duration;
+        unsigned char fade_mode;
 };
 
 enum op {
@@ -24,6 +25,7 @@ enum op {
 extern struct config config;
 extern void button_scan();
 extern void paint(char x, char y, char z, char d);
+extern void wait_frame_sync();
 
 // provided by board
 extern unsigned char button_read(); // returns inverted mask of pressed buttons

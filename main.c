@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include <avr/interrupt.h>
 #include "avr/io.h"
@@ -283,8 +284,41 @@ button_scan()
         ds3231_sync();
 }
 
+static char fade_step = 10, inner_frame_count = 8 ;
+
+static void
+update_fade_step()
+{
+        // animation looks nice if it takes about 0.25 second
+        uint16_t frames = 10 * (uint16_t) config.tube_pwm_freq / 4;
+        // frames    = pdm steps         * inner_frames
+        //           = (128 / fade_step) * inner_frames
+        // fade_step = (128 / frames)    * inner_frames
+        // fade_step = (128  * inner_frames) / frames
+        inner_frame_count = sqrt(frames);
+        fade_step = 128 * (uint16_t)inner_frame_count / frames;
+}
+
 static void
 refresh() {
+        static struct time prev;
+
+        if (config.fade_mode == 1) {
+                uint8_t pdm_state = 0;
+                for (char pdm_duty = 0; pdm_duty < 128; pdm_duty += fade_step) {
+                        for (char frame = inner_frame_count; frame; frame--) {
+                                pdm_state += pdm_duty;
+                                if (pdm_state & 0x80)
+                                        paint(time.hour, time.min, time.sec, time.sec & 1);
+                        else
+                                paint(prev.hour, prev.min, prev.sec, prev.sec & 1);
+                                wait_frame_sync();
+                                pdm_state &= 0x7f;
+                        }
+                }
+                prev = time;
+        }
+
         paint(time.hour, time.min, time.sec, time.sec & 1);
 }
 
@@ -337,6 +371,7 @@ config_print()
         printf("  led_blue_brightness:  %d\n", config.led_blue_brightness);
         printf("  antipoison_start:     %d\n", config.antipoison_start);
         printf("  antipoison_duration:  %d\n", config.antipoison_duration);
+        printf("  fade_mode:            %d\n", config.fade_mode);
 }
 
 static uint8_t
@@ -377,10 +412,11 @@ struct param {
         {0x01, &config.led_red_brightness,	0,	0,	10, "red led pwm"},
         {0x02, &config.led_green_brightness,	0,	0,	10, "green led pwm"},
         {0x03, &config.led_blue_brightness,	0,	0,	10, "blue led pwm"},
-        {0x04, &config.tube_pwm_freq,		0,	10,	60, "tube pwm"},
-        {0x05, &config.tube_pwm_duty,		0,	10,	99, "tube duty"},
+        {0x04, &config.tube_pwm_freq,		0,	10,	90, "tube pwm"},
+        {0x05, &config.tube_pwm_duty,		0,	0,	99, "tube duty"},
         {0x06, &config.antipoison_start,	0,	0,	24, "antipoison start"},
         {0x07, &config.antipoison_duration,	0,	0,	24, "antipoison duration"},
+        {0x08, &config.fade_mode,		0,	0,	1,  "fade mode"},
         {0xff, NULL, 				0, 	0, 	0,  NULL},
 };
 
@@ -406,8 +442,6 @@ mode()
         unsigned char count = 0;
         struct param *p = param;
 
-        config_init();
-
         do {
                 paint(p->id, 0xff, bin2bcd(*p->val), 0);
 
@@ -427,6 +461,7 @@ mode()
                 case DOWN:
                         update_u8(op, p->val, p->flags, p->lower_bound, p->upper_bound);
                         config_apply();
+                        update_fade_step();
                         break;
                 }
         } while (count < 10);
@@ -494,6 +529,7 @@ main()
         printf("version: %s\n", VERSION);
 
         config_apply();
+        update_fade_step();
         config_print();
 
         wdt_enable(WDTO_250MS);

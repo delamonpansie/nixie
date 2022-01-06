@@ -73,7 +73,16 @@ tube_pwm_config()
 {
         // Set PWM freq & duty for tubes
         ICR1 =  (F_CPU / 64 / (config.tube_pwm_freq * 10)) - 1;
-        OCR1B = (uint32_t)ICR1 * config.tube_pwm_duty / 100;
+
+        if (config.tube_pwm_duty > 0) {
+                OCR1B = (uint32_t)ICR1 * config.tube_pwm_duty / 100;
+                // Enable LE (tube enable) PWM output
+                // Configure "Compare Output Mode" to non-inverting mode:
+                // Clear OC1B output pin on compare match, set OC1B output pin at BOTTOM
+                TCCR1A |= _BV(COM1B1);
+        } else {
+                TCCR1A &= ~_BV(COM1B1);
+        }
 }
 
 void
@@ -94,13 +103,12 @@ ISR(TIMER0_OVF_vect)
         }
 }
 
-
 static char * volatile framebuf;
-// TIMER1_COMPB interrupt will be executed right after clearing OC1B, tubes will be off at this moment.
+// TIMER1_COMPB interrupt will be executed right after clearing OC1B (which is PB2), tubes will be off at this moment.
 ISR(TIMER1_COMPB_vect)
 {
-        if (framebuf == NULL)
-                return;
+       if (framebuf == NULL || framebuf == (void *)1)
+                goto out;
 
         // datasheet table 3-1 suggests to disable LE when HV5122
         // LE is connected to PB2 and will be low if PWM is enabled, becase COMPB executed after clearing OC1B (PB2)
@@ -114,7 +122,17 @@ ISR(TIMER1_COMPB_vect)
         }
 
         PORTB |= _BV(PB2);
+out:
         framebuf = NULL;
+}
+
+void
+wait_frame_sync()
+{
+        // if there is no pending paint, make a dummy one
+        if (framebuf == NULL)
+                framebuf = (void *)1;
+        while (framebuf != NULL);
 }
 
 void
@@ -163,16 +181,11 @@ tube_init()
         TCCR1A |= _BV(WGM11);
         TCCR1B |= _BV(WGM13)|_BV(WGM12);
 
-        tube_pwm_config();
-
         // Configure LE as OUTPUT
         // LE is also SPI ^SS, so it must be configured as output all the time
         DDRB |= _BV(PB2);
 
-        // Enable LE (tube enable) PWM output
-        //  Configure "Compare Output Mode" to non-inverting mode:
-        //  Clear OC1B output pin on compare match, set OC1B output pin at BOTTOM
-        TCCR1A |= _BV(COM1B1);
+        tube_pwm_config();
 
         // Configure SPI pins. Set MOSI and SCK as output.
         DDRB |= _BV(PB3)|_BV(PB5);
